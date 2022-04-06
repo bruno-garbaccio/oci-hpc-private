@@ -2,7 +2,7 @@
 - name: install munge
   become: true
   yum:
-    enablerepo: "epel,ol7_developer_EPEL"
+    enablerepo: "ol8_developer_EPEL,ol8_codeready_builder"
     name:
       - munge
       - munge-libs
@@ -72,7 +72,7 @@
 - name: install SLURM server packages
   become: true
   yum:
-    enablerepo: "epel,ol7_developer_EPEL"
+    enablerepo: "ol8_developer_EPEL,ol8_codeready_builder"
     name:
       - slurm
       - slurm-devel

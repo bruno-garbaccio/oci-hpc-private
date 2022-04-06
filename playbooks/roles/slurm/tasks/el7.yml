@@ -11,7 +11,7 @@
     msg: "{{ (not destroy|bool) and ((initial|bool) or (not initial|bool and ('compute' in group_names))) }}"
 
 - name: include common tasks
-  include_tasks: common.yml
+  include_tasks: common-el7.yml
   when: (not destroy|bool) and ((initial|bool) or (not initial|bool and ('compute' in group_names)))
 
 - name: run server directives
@@ -19,7 +19,7 @@
   when: ('bastion' in group_names) and (not destroy|bool) and (initial| bool)
 
 - name: run compute directives
-  include_tasks: compute.yml
+  include_tasks: compute-el7.yml
   when: ('compute' in group_names) and (not destroy|bool)
 
 - name: cleanup
