@@ -17,7 +17,7 @@ locals {
 
   nfs_source_IP = var.create_ffs ? element(concat(oci_file_storage_mount_target.FSSMountTarget.*.ip_address, [""]), 0) : var.nfs_source_IP
 // subnet id derived either from created subnet or existing if specified
-  bastion_subnet_id = var.use_existing_vcn ? var.public_subnet_id : element(concat(oci_core_subnet.public-subnet.*.id, [""]), 0)
+  bastion_subnet_id = var.use_existing_vcn ? var.private_subnet_id : element(concat(oci_core_subnet.private-subnet.*.id, [""]), 0)
 
   cluster_name = var.use_custom_name ? var.cluster_name : random_pet.name.id
 
@@ -39,5 +39,11 @@ locals {
   iscsi_ip = var.cluster_network ? element(concat(oci_core_volume_attachment.cluster_network_volume_attachment.*.ipv4, [""]), 0) : element(concat(oci_core_volume_attachment.instance_pool_volume_attachment.*.ipv4, [""]), 0)
 
   mount_ip = local.scratch_nfs_type == "block" ? local.iscsi_ip : "none" 
+
+  target_resource_port = oci_bastion_session.bastionsession.target_resource_details[0].target_resource_port
+  target_resource_private_ip_address = oci_bastion_session.bastionsession.target_resource_details[0].target_resource_private_ip_address
+  connection_details_username = split("@",split(" ", oci_bastion_session.bastionsession.ssh_metadata.command)[11])[0]
+  connection_details_host = trim(split("@",split(" ", oci_bastion_session.bastionsession.ssh_metadata.command)[11])[1], "\"")
+
 
 }

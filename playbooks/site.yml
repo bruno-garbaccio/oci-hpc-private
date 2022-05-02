@@ -25,6 +25,8 @@
     - mpi-hostfiles
     - etc-hosts
 
+  
+
 - hosts: bastion
   become: true
   vars:

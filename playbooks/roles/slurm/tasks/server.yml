@@ -18,6 +18,7 @@
     name: 
       - python2-PyMySQL
     state: installed
+    lock_timeout: 180
 
 #- name: install Slurm Server
 #  block:    
@@ -47,6 +48,7 @@
       - slurm-slurmctld
       - slurm-slurmdbd
 #      - slurm-slurmrestd
+    lock_timeout: 180
   
 - name: Create systemd unit dirs
   become: true

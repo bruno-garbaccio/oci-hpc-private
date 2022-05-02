@@ -28,13 +28,14 @@
   yum: 
     name: mysql-release-el7
     state: present
-
+    lock_timeout: 180
 - name: Install MySQL packages
   become: true
   yum:
    enablerepo: ol7_MySQL80
    name: '{{ mysql_packages }}'
    state: present
+   lock_timeout: 180
   tags: install-only
 
 - name: Update SELinux context for {{ mysql_db_path }}

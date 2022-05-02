@@ -55,6 +55,7 @@
   yum: 
     name: grafana
     state: latest
+    lock_timeout: 180
 
 - name: start grafana
   become: true
@@ -83,7 +84,7 @@
   become: true
   yum:
     name: https://dev.mysql.com/get/mysql80-community-release-el7-5.noarch.rpm
-
+    lock_timeout: 180
 - name: Ensure GPG key is installed for the repository
   become: true
   ansible.builtin.rpm_key:
@@ -95,6 +96,7 @@
   yum:
     name: mysql-shell
     update_cache: yes
+    lock_timeout: 180
 
 - name: install mysql connector
   become: true

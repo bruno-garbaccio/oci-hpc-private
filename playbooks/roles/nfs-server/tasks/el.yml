@@ -1,6 +1,10 @@
 ---
 - name: Ensure NFS utilities are installed.
-  package: name=nfs-utils state=present
+  package: 
+    name:
+    - nfs-utils 
+    state: present
+    lock_timeout: 180
 
 - name: Start NFS server
   service: 

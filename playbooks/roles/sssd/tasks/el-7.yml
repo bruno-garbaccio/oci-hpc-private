@@ -5,6 +5,7 @@
       - sssd
       - authconfig
     state: present
+    lock_timeout: 180
 
 - name: Add configuration file to /etc/sssd/sssd.conf
   template:

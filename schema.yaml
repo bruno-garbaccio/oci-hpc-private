@@ -499,7 +499,7 @@ variables:
     type: integer
     minimum: 0
     title: "Initial cluster size"
-    default: 2
+    default: 0
     description: "Number of Compute Instances (Permanent Cluster when autoscaling)"
 
   hyperthreading:
@@ -735,14 +735,13 @@ variables:
     required: true
     dependsOn:
       compartmentId: ${vcn_compartment}
-  public_subnet_id:
-    type: oci:core:subnet:id
-    dependsOn:
-      compartmentId: ${vcn_compartment}
-      vcnId: ${vcn_id}
-      hidePrivateSubnet: true
-    visible: ${use_existing_vcn}
-    required: true
+#  public_subnet_id:
+#    type: oci:core:subnet:id
+#    dependsOn:
+#      compartmentId: ${vcn_compartment}
+#      vcnId: ${vcn_id}
+#      hidePublicSubnet: true
+#    visible: ${use_existing_vcn}
   private_subnet_id:
     type: oci:core:subnet:id
     dependsOn:
@@ -832,7 +831,7 @@ variables:
   autoscaling:
     type: boolean
     title: "Scheduler based autoscaling"
-    default: false
+    default: true
     description: "Requires SLURM installation. Scheduler will launch new clusters based on job requirements"
     
   inst_prin:

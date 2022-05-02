@@ -3,11 +3,13 @@
   yum: 
     name: git
     state: latest
+    lock_timeout: 180
   become: true
 
 - name: Development Tools" 
   yum: 
     name: "@Development Tools"
+    lock_timeout: 180
   become: true
 
 - name: Clone SPACK

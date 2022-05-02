@@ -4,4 +4,5 @@
     name: 
       - pyOpenSSL
       - python2-cryptography
+    lock_timeout: 180  
     state: latest

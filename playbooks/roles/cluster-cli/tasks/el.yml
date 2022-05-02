@@ -7,7 +7,7 @@
       - python36-click
       - python36-ldap3
     state: present
-
+    lock_timeout: 180
 - name: copy cluster cli 
   copy: 
     src: cluster

@@ -5,7 +5,6 @@
 {% set public_subnet = network | ipaddr('net') %}
 {% endif %}
 
-{{ local_path }} {{ public_subnet }}({{ home_nfs_options }})
 {% if private_subnet is defined %}
 {{ local_path }} {{ private_subnet }}({{ home_nfs_options }})
 {% endif %}

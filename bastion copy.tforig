@@ -18,7 +18,7 @@ resource "oci_core_volume_attachment" "bastion_volume_attachment" {
 } 
 
 resource "oci_core_instance" "bastion" {
-  depends_on          = [oci_core_subnet.private-subnet]
+  depends_on          = [oci_core_subnet.public-subnet]
   availability_domain = var.bastion_ad
   compartment_id      = var.targetCompartment
   shape               = var.bastion_shape
@@ -298,144 +298,71 @@ resource "null_resource" "bastion" {
       bastion_user = local.connection_details_username
       bastion_private_key = tls_private_key.ssh.private_key_pem      
     }
-  }
-
-  provisioner "file" {
-    content     = var.node_count > 0 ? join("\n",local.cluster_instances_ips) : "\n"
-    destination = "/tmp/hosts"
-    connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
-      type        = "ssh"
-      user        = var.bastion_username
-      private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
-    }
-  }
-
-  provisioner "file" {
-    content        = templatefile(var.inst_prin ? "${path.module}/autoscaling/provider_inst_prin.tpl" : "${path.module}/autoscaling/provider_user.tpl", {  
-      api_user_ocid = var.api_user_ocid, 
-      api_fingerprint = var.api_fingerprint,
-      private_key_path = "/opt/oci-hpc/autoscaling/credentials/key.pem",
-      tenancy_ocid = var.tenancy_ocid
-      })
-
-    destination   = "/opt/oci-hpc/autoscaling/tf_init/provider.tf"
-    connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
-      type        = "ssh"
-      user        = var.bastion_username
-      private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
-    }
-  }
-
-  provisioner "file" {
-    content        = templatefile("${path.module}/queues.conf", {  
-      cluster_network = var.cluster_network,
-      marketplace_listing = var.marketplace_listing,
-      image = local.image_ocid,
-      use_marketplace_image = var.use_marketplace_image,
-      boot_volume_size = var.boot_volume_size,
-      shape = var.cluster_network ? var.cluster_network_shape : var.instance_pool_shape
-      ad = var.ad,
-      targetCompartment = var.targetCompartment,
-      instance_pool_ocpus = var.instance_pool_ocpus,
-      instance_pool_memory = var.instance_pool_memory,
-      instance_pool_custom_memory = var.instance_pool_custom_memory,
-      queue=var.queue,
-      hyperthreading = var.hyperthreading
-      })
-
-    destination   = "/opt/oci-hpc/autoscaling/queues.conf"
-    connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
-      type        = "ssh"
-      user        = var.bastion_username
-      private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
-    }
-  }
-  
-
+  }  
 }
-
-
 resource "null_resource" "cluster" { 
   depends_on = [null_resource.bastion, oci_core_cluster_network.cluster_network, oci_core_instance.bastion, oci_core_volume_attachment.bastion_volume_attachment ] 
   triggers = { 
     cluster_instances = join(", ", local.cluster_instances_names)
   } 
 
-  provisioner "file" {
-    content        = templatefile("${path.module}/inventory.tpl", {  
-     bastion_name = oci_core_instance.bastion.display_name, 
-      bastion_ip = oci_core_instance.bastion.private_ip, 
-      compute = var.node_count > 0 ? zipmap(local.cluster_instances_names, local.cluster_instances_ips) : zipmap([],[])
-      public_subnet = data.oci_core_subnet.public_subnet.cidr_block, 
-      private_subnet = data.oci_core_subnet.private_subnet.cidr_block, 
-      rdma_network = cidrhost(var.rdma_subnet, 0),
-      rdma_netmask = cidrnetmask(var.rdma_subnet),
-      nfs = var.node_count > 0 ? local.cluster_instances_names[0] : "",
-      home_nfs = var.home_nfs,
-      scratch_nfs = var.use_scratch_nfs && var.node_count > 0,
-      cluster_nfs = var.use_cluster_nfs,
-      cluster_nfs_path = var.cluster_nfs_path,
-      scratch_nfs_path = var.scratch_nfs_path,
-      add_nfs = var.add_nfs,
-      nfs_target_path = var.nfs_target_path,
-      nfs_source_IP = local.nfs_source_IP,
-      nfs_source_path = var.nfs_source_path,
-      nfs_options = var.nfs_options,
-      cluster_network = var.cluster_network,
-      slurm = var.slurm,
-      spack = var.spack,
-      ldap = var.ldap,
-      bastion_block = var.bastion_block, 
-      scratch_nfs_type = local.scratch_nfs_type,
-      bastion_mount_ip = local.bastion_mount_ip,
-      cluster_mount_ip = local.mount_ip,
-      autoscaling = var.autoscaling,
-      cluster_name = local.cluster_name,
-      shape = var.cluster_network ? var.cluster_network_shape : var.instance_pool_shape,
-      instance_pool_ocpus = var.instance_pool_ocpus,
-      queue=var.queue,
-      monitoring = var.monitoring,
-      hyperthreading = var.hyperthreading,
-      bastion_username = var.bastion_username,
-      compute_username = var.compute_username,
-      autoscaling_monitoring = var.autoscaling_monitoring,
-      autoscaling_mysql_service = var.autoscaling_mysql_service,
-      monitoring_mysql_ip = var.autoscaling_monitoring && var.autoscaling_mysql_service ? oci_mysql_mysql_db_system.monitoring_mysql_db_system[0].ip_address : "localhost",
-      admin_password = var.admin_password,
-      admin_username = var.autoscaling_mysql_service ? var.admin_username : "root"
-      })
+#  provisioner "file" {
+#    content        = templatefile("${path.module}/inventory.tpl", {  
+#     bastion_name = oci_core_instance.bastion.display_name, 
+#      bastion_ip = oci_core_instance.bastion.private_ip, 
+#      compute = var.node_count > 0 ? zipmap(local.cluster_instances_names, local.cluster_instances_ips) : zipmap([],[])
+#      public_subnet = data.oci_core_subnet.public_subnet.cidr_block, 
+#      private_subnet = data.oci_core_subnet.private_subnet.cidr_block, 
+#      rdma_network = cidrhost(var.rdma_subnet, 0),
+#      rdma_netmask = cidrnetmask(var.rdma_subnet),
+#      nfs = var.node_count > 0 ? local.cluster_instances_names[0] : "",
+#      home_nfs = var.home_nfs,
+#      scratch_nfs = var.use_scratch_nfs && var.node_count > 0,
+#      cluster_nfs = var.use_cluster_nfs,
+#      cluster_nfs_path = var.cluster_nfs_path,
+#      scratch_nfs_path = var.scratch_nfs_path,
+#      add_nfs = var.add_nfs,
+#      nfs_target_path = var.nfs_target_path,
+#      nfs_source_IP = local.nfs_source_IP,
+#      nfs_source_path = var.nfs_source_path,
+#      nfs_options = var.nfs_options,
+#      cluster_network = var.cluster_network,
+#      slurm = var.slurm,
+#      spack = var.spack,
+#      ldap = var.ldap,
+#      bastion_block = var.bastion_block, 
+#      scratch_nfs_type = local.scratch_nfs_type,
+#      bastion_mount_ip = local.bastion_mount_ip,
+#      cluster_mount_ip = local.mount_ip,
+#      autoscaling = var.autoscaling,
+#      cluster_name = local.cluster_name,
+#      shape = var.cluster_network ? var.cluster_network_shape : var.instance_pool_shape,
+#      instance_pool_ocpus = var.instance_pool_ocpus,
+#      queue=var.queue,
+#      monitoring = var.monitoring,
+#      hyperthreading = var.hyperthreading,
+#      bastion_username = var.bastion_username,
+#      compute_username = var.compute_username,
+#      autoscaling_monitoring = var.autoscaling_monitoring,
+#      autoscaling_mysql_service = var.autoscaling_mysql_service,
+#      monitoring_mysql_ip = var.autoscaling_monitoring && var.autoscaling_mysql_service ? oci_mysql_mysql_db_system.monitoring_mysql_db_system[0].ip_address : "localhost",
+#      admin_password = var.admin_password,
+#      admin_username = var.autoscaling_mysql_service ? var.admin_username : "root"
+#      })
 
-    destination   = "/opt/oci-hpc/playbooks/inventory"
-    connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
-      type        = "ssh"
-      user        = var.bastion_username
-      private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
-    }
-  }
+#    destination   = "/opt/oci-hpc/playbooks/inventory"
+#    connection {
+#      #host        = oci_core_instance.bastion.public_ip
+#      host        = oci_core_instance.bastion.private_ip
+#      type        = "ssh"
+#      user        = var.bastion_username
+#      private_key = tls_private_key.ssh.private_key_pem
+#      bastion_host = local.connection_details_host
+#      bastion_port = local.target_resource_port
+#      bastion_user = local.connection_details_username
+#      bastion_private_key = tls_private_key.ssh.private_key_pem      
+#    }
+#  }
 
 
   provisioner "file" {

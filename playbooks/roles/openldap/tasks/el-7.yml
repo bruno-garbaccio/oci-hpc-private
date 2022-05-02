@@ -15,6 +15,7 @@
   yum:
     name: policycoreutils-python
     state: installed
+    lock_timeout: 180
   tags: install-only
 
 - name: Generate openldap root password 
@@ -33,6 +34,7 @@
   yum:
     name: '{{ openldap_packages }}'
     state: present
+    lock_timeout: 180
   tags: install-only
 
 - block:

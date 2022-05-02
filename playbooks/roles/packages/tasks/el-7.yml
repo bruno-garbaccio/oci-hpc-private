@@ -5,6 +5,7 @@
       - pyOpenSSL
       - python2-cryptography
     state: latest
+    lock_timeout: 180
   register: packages_output
   retries: 5
   delay: 10
@@ -15,6 +16,7 @@
     name:
       - python3-oci-cli
     state: latest
+    lock_timeout: 180
   register: oci_cli_output
   retries: 5
   delay: 10

@@ -17,7 +17,7 @@
   yum: 
     name: grafana
     state: latest
-
+    lock_timeout: 180
 - name: start grafana
   become: true
   service: 

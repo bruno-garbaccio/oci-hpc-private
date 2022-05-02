@@ -7,6 +7,7 @@
       - munge
       - munge-libs
       - munge-devel
+    lock_timeout: 180  
 - name: create munge group
   become: true
   group:
@@ -82,6 +83,7 @@
       - slurm-torque
       - slurm-openlava
 #     - slurm-example-configs
+    lock_timeout: 180
           
 - name: Create {{ slurm_spool_path }}
   become: true

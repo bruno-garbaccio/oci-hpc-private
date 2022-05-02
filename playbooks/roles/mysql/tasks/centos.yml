@@ -29,6 +29,7 @@
   yum:
    name: '{{ mariadb_packages }}'
    state: present
+   lock_timeout: 180
   tags: install-only
 
 

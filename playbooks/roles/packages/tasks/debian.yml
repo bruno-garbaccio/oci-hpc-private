@@ -6,4 +6,5 @@
       - python-cryptography
       - parted
     state: latest
+    lock_timeout: 180
 

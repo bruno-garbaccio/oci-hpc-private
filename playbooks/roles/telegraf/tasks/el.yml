@@ -14,6 +14,7 @@
   yum:
     name: python-pip
     state: present
+    lock_timeout: 180
 
 - name: install influx pip
   become: true
@@ -31,6 +32,7 @@
   yum: 
     name: telegraf
     state: latest
+    lock_timeout: 180
 
 - name: copy telegraf.conf
   become: true

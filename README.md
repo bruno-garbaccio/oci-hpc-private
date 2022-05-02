@@ -150,3 +150,7 @@ You will now see the dashboard.
 If selected bastion host will act as an LDAP server for the cluster. It's strongly recommended to leave default, shared home directory. 
 User management can be performed from the bastion using ``` cluster ``` command. 
 
+
+# Connexion via "Bastion Service"
+
+In order to connect to your private infrastructure, you can use the Bastion Service of OCI. Go to Bastion service and use the bastion created for the initial deployment as it is already targeting the correct VCN. You can create a new "ssh port forwarding session", enter the private IP or Instance Name and port to target on the instance. For ssh connexion, use port 22. If you selected "Monitor the autoscaling", you will have to specify port 3000 to see your Grafana dashboard. Specify a public key and create your session. Wait for the creation and click on the three dots to view the command once created

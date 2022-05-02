@@ -3,6 +3,7 @@
   yum:
     name: "{{ nfs_rpm_packages }}"
     state: present
+    lock_timeout: 180
   tags: install-only
   register: nfs_packages_output
   retries: 5
