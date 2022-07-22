@@ -29,8 +29,8 @@ variable "scratch_nfs_path" { default = "/nfs/scratch" }
 variable "vcn_compartment" { default = ""}
 variable "vcn_id" { default = ""}
 variable "use_existing_vcn" { default = false}
-variable "private_subnet_id" { default = ""}
 #variable "public_subnet_id" { default = ""}
+variable "private_subnet_id" { default = ""}
 variable "vcn_subnet" { default = "172.16.0.0/21" }
 variable "public_subnet" { default = "172.16.0.0/24" }
 variable "additional_subnet" { default = "172.16.1.0/24" }
@@ -38,6 +38,8 @@ variable "rdma_subnet" { default = "192.168.168.0/22" }
 variable "private_subnet" { default = "172.16.4.0/22" }
 variable "ssh_cidr" { default = "0.0.0.0/0" }
 variable "slurm" { default = false }
+variable "slurm_ha" { default = false }
+variable "rack_aware" { default = false }
 variable "ldap" { default = true } 
 variable "spack" { default = false } 
 variable "bastion_ocpus" { default = 2} 
@@ -46,6 +48,9 @@ variable "instance_pool_memory" { default = 16 }
 variable "instance_pool_custom_memory" { default = false }
 variable "bastion_memory" { default = 16 }
 variable "bastion_custom_memory" { default = false }
+variable "privilege_sudo" { default = true }
+variable "privilege_group_name" { default = "privilege" }
+
 variable "bastion_listing" { 
   default = "4. Oracle Linux 7.9 OFED 5.0-2.1.8.0 RHCK 20210709"
 } 
@@ -97,13 +102,15 @@ variable "api_user_key" { default = ""}
 variable "api_fingerprint" { default = ""}
 variable "api_user_ocid" { default = ""} 
 variable "home_nfs" { default = true } 
+variable "home_fss" { default = false } 
 variable "configure" { default = true }
 
 variable "hyperthreading" { default = true }
 
 variable "autoscaling" { default = false } 
+variable "latency_check" { default = true }
 variable "add_nfs" { default = false}
-variable "create_ffs" { default = false }
+variable "create_fss" { default = false }
 variable "fss_compartment" {default = ""}
 variable "fss_ad" {default = ""}
 variable "nfs_target_path" { default = "/app"}
@@ -111,6 +118,10 @@ variable "nfs_source_IP" { default = ""}
 variable "nfs_source_path" { default = "/app"}
 variable "nfs_options" {default = ""}
 variable "monitoring" { default = true }
+variable "enroot" { default = false }
+variable "pyxis" { default = false }
+
+
 
 variable "unsupported" { 
   type=bool
@@ -155,6 +166,10 @@ variable "admin_username" {
 
 variable "admin_password" { 
   type = string
-  default = "Monitor2021!"
+  default = "Monitor1234!"
 }
 
+variable scratch_nfs_mount { default = ""}
+variable scratch_nfs_export {default = ""}
+variable cluster_nfs_mount {default = ""}
+variable cluster_nfs_export {default = ""}

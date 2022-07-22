@@ -1,16 +1,17 @@
 ---
 - name: install GIT
-  yum: 
-    name: git
-    state: latest
-    lock_timeout: 180
-  become: true
+  vars: 
+    package_name: 
+      - git
+  include_role: 
+    name: safe_yum
 
 - name: Development Tools" 
-  yum: 
-    name: "@Development Tools"
-    lock_timeout: 180
-  become: true
+  vars: 
+    package_name: 
+      - "@Development Tools"
+  include_role: 
+    name: safe_yum
 
 - name: Clone SPACK
   git: 
