@@ -17,8 +17,9 @@ locals {
 
   nfs_source_IP = var.create_fss ? element(concat(oci_file_storage_mount_target.FSSMountTarget.*.ip_address, [""]), 0) : var.nfs_source_IP
 // subnet id derived either from created subnet or existing if specified
-  bastion_subnet_id = var.use_existing_vcn ? var.private_subnet_id : element(concat(oci_core_subnet.private-subnet.*.id, [""]), 0)
-
+// bastion_subnet_id = var.use_existing_vcn ? var.public_subnet_id : element(concat(oci_core_subnet.public-subnet.*.id, [""]), 0)
+  bastion_subnet_id = var.private_deployment ? var.use_existing_vcn ? var.private_subnet_id : element(concat(oci_core_subnet.private-subnet.*.id, [""]), 0) : var.use_existing_vcn ? var.public_subnet_id : element(concat(oci_core_subnet.public-subnet.*.id, [""]), 0)
+  
   cluster_name = var.use_custom_name ? var.cluster_name : random_pet.name.id
 
   bastion_image = var.use_standard_image ? oci_core_app_catalog_subscription.bastion_mp_image_subscription[0].listing_resource_id : local.custom_bastion_image_ocid
@@ -44,12 +45,7 @@ locals {
 
 
   cluster_ocid = var.node_count > 0 ? var.cluster_network ? oci_core_cluster_network.cluster_network[0].id : oci_core_instance_pool.instance_pool[0].id : ""
-  
-// Addition for private deployment  
-  target_resource_port = oci_bastion_session.bastionsession.target_resource_details[0].target_resource_port
-  target_resource_private_ip_address = oci_bastion_session.bastionsession.target_resource_details[0].target_resource_private_ip_address
-  connection_details_username = split("@",split(" ", oci_bastion_session.bastionsession.ssh_metadata.command)[11])[0]
-  connection_details_host = trim(split("@",split(" ", oci_bastion_session.bastionsession.ssh_metadata.command)[11])[1], "\"")
-
-
+  host = var.private_deployment ? data.oci_resourcemanager_private_endpoint_reachable_ip.private_endpoint_reachable_ip[0].ip_address : oci_core_instance.bastion.public_ip
+  bastion_bool_ip = var.private_deployment ? false : true
+  bastion_subnet = var.private_deployment ? oci_core_subnet.private-subnet : oci_core_subnet.private-subnet 
 }

@@ -17,8 +17,17 @@ resource "oci_core_volume_attachment" "bastion_volume_attachment" {
   device          = "/dev/oracleoci/oraclevdb"
 } 
 
+resource "oci_resourcemanager_private_endpoint" "rms_private_endpoint" {
+  count = var.private_deployment ? 1 : 0
+  compartment_id = var.targetCompartment
+  display_name   = "rms_private_endpoint"
+  description    = "rms_private_endpoint_description"
+  vcn_id         = local.vcn_id
+  subnet_id      = local.subnet_id
+}
+
 resource "oci_core_instance" "bastion" {
-  depends_on          = [oci_core_subnet.private-subnet]
+  depends_on          = [local.bastion_subnet]
   availability_domain = var.bastion_ad
   compartment_id      = var.targetCompartment
   shape               = var.bastion_shape
@@ -31,12 +40,7 @@ resource "oci_core_instance" "bastion" {
       }
   }
   agent_config {
-      is_management_disabled = false
-      is_monitoring_disabled = false
-      plugins_config {
-          desired_state = "ENABLED"
-          name = "Bastion"
-      }
+    is_management_disabled = true
     }
   display_name        = "${local.cluster_name}-bastion"
 
@@ -58,45 +62,9 @@ resource "oci_core_instance" "bastion" {
 
   create_vnic_details {
     subnet_id = local.bastion_subnet_id
-    assign_public_ip = false
+    assign_public_ip = local.bastion_bool_ip
   }
 } 
-
-resource "oci_bastion_bastion" "bastion_service" {
-    #Required
-    bastion_type = "standard"
-    compartment_id = var.targetCompartment
-    target_subnet_id = local.bastion_subnet_id
-    client_cidr_block_allow_list = ["0.0.0.0/0"] 
-}
-
-resource "time_sleep" "wait_5min" {
-  depends_on = [
-    oci_core_instance.bastion
-  ]
-  create_duration = "300s"
-}
-resource "null_resource" "session" { 
-  depends_on = [oci_core_instance.bastion ] 
-  triggers = { 
-    bastion = oci_core_instance.bastion.id
-  } 
-}
-resource "oci_bastion_session" "bastionsession" {
-    depends_on = [time_sleep.wait_5min]
-    bastion_id = oci_bastion_bastion.bastion_service.id
-    key_details {
-        public_key_content = tls_private_key.ssh.public_key_openssh
-    }
-    target_resource_details {
-        session_type       = "MANAGED_SSH"
-        target_resource_id = oci_core_instance.bastion.id
-        target_resource_operating_system_user_name = "opc"
-        target_resource_port                       = "22"
-    }
-    session_ttl_in_seconds = 10800
-    display_name = "bastionsession-private-host"
-}
 
 resource "null_resource" "bastion" { 
   depends_on = [oci_core_instance.bastion, oci_core_volume_attachment.bastion_volume_attachment ] 
@@ -112,30 +80,20 @@ resource "null_resource" "bastion" {
       "mkdir -p /opt/oci-hpc/playbooks"
       ]
     connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
+      host        = local.host
       type        = "ssh"
       user        = var.bastion_username
       private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem           
     }
   }
   provisioner "file" {
     source        = "playbooks"
     destination   = "/opt/oci-hpc/"
     connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
+      host        = local.host
       type        = "ssh"
       user        = var.bastion_username
       private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
     }
   }
 
@@ -143,15 +101,10 @@ resource "null_resource" "bastion" {
     source      = "autoscaling"
     destination = "/opt/oci-hpc/"
     connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
+      host        = local.host
       type        = "ssh"
       user        = var.bastion_username
       private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
     }
   }
 
@@ -159,15 +112,10 @@ resource "null_resource" "bastion" {
     source      = "bin"
     destination = "/opt/oci-hpc/"
     connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
+      host        = local.host
       type        = "ssh"
       user        = var.bastion_username
       private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
     }
   }
 
@@ -175,45 +123,30 @@ resource "null_resource" "bastion" {
     source      = "conf"
     destination = "/opt/oci-hpc/"
     connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
+      host        = local.host
       type        = "ssh"
       user        = var.bastion_username
       private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
     }
   }
     provisioner "file" {
     source      = "logs"
     destination = "/opt/oci-hpc/"
     connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
+      host        = local.host
       type        = "ssh"
       user        = var.bastion_username
       private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
     }
   }
   provisioner "file" {
     source      = "samples"
     destination = "/opt/oci-hpc/"
     connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
+      host        = local.host
       type        = "ssh"
       user        = var.bastion_username
       private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
     }
   }
   provisioner "file" { 
@@ -222,15 +155,10 @@ resource "null_resource" "bastion" {
     })
     destination   = "/tmp/configure.conf"
     connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
+      host        = local.host
       type        = "ssh"
       user        = var.bastion_username
       private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
     }
   }
 
@@ -238,15 +166,10 @@ resource "null_resource" "bastion" {
     content     = tls_private_key.ssh.private_key_pem
     destination = "/home/${var.bastion_username}/.ssh/cluster.key"
     connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
+      host        = local.host
       type        = "ssh"
       user        = var.bastion_username
       private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
     }
   }
 
@@ -259,15 +182,10 @@ resource "null_resource" "bastion" {
       "timeout 60m /opt/oci-hpc/bin/bastion.sh"
       ]
     connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
+      host        = local.host
       type        = "ssh"
       user        = var.bastion_username
       private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
     }
   }
 }
@@ -334,15 +252,10 @@ resource "null_resource" "cluster" {
 
     destination   = "/opt/oci-hpc/playbooks/inventory"
     connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
+      host        = local.host
       type        = "ssh"
       user        = var.bastion_username
       private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
     }
   }
 
@@ -351,15 +264,10 @@ resource "null_resource" "cluster" {
     content     = var.node_count > 0 ? join("\n",local.cluster_instances_ips) : "\n"
     destination = "/tmp/hosts"
     connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
+      host        = local.host
       type        = "ssh"
       user        = var.bastion_username
       private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
     }
   }
 
@@ -373,15 +281,10 @@ resource "null_resource" "cluster" {
 
     destination   = "/opt/oci-hpc/autoscaling/tf_init/provider.tf"
     connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
+      host        = local.host
       type        = "ssh"
       user        = var.bastion_username
       private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
     }
   }
 
@@ -404,15 +307,10 @@ resource "null_resource" "cluster" {
 
     destination   = "/opt/oci-hpc/conf/queues.conf"
     connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
+      host        = local.host
       type        = "ssh"
       user        = var.bastion_username
       private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
     }
   }
   
@@ -473,15 +371,10 @@ resource "null_resource" "cluster" {
 
     destination   = "/opt/oci-hpc/conf/variables.tf"
     connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
+      host        = local.host
       type        = "ssh"
       user        = var.bastion_username
       private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
     }
   }
 
@@ -498,30 +391,20 @@ provisioner "file" {
 
     destination   = "/tmp/initial.mon"
     connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
+      host        = local.host
       type        = "ssh"
       user        = var.bastion_username
       private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
     }
   }
   provisioner "file" {
     content     = base64decode(var.api_user_key)
     destination   = "/opt/oci-hpc/autoscaling/credentials/key.initial" 
     connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
+      host        = local.host
       type        = "ssh"
       user        = var.bastion_username
       private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
     }
   }
 
@@ -537,15 +420,10 @@ provisioner "file" {
       "/opt/oci-hpc/bin/initial_monitoring.sh",
       "exit $exit_code"     ]
     connection {
-      #host        = oci_core_instance.bastion.public_ip
-      host        = oci_core_instance.bastion.private_ip
+      host        = local.host
       type        = "ssh"
       user        = var.bastion_username
       private_key = tls_private_key.ssh.private_key_pem
-      bastion_host = local.connection_details_host
-      bastion_port = local.target_resource_port
-      bastion_user = local.connection_details_username
-      bastion_private_key = tls_private_key.ssh.private_key_pem      
     }
   }
 }

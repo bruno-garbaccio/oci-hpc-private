@@ -58,4 +58,9 @@ data "oci_core_images" "linux" {
   }
 }
 
-
+data "oci_resourcemanager_private_endpoint_reachable_ip" "private_endpoint_reachable_ip" {
+    #Required
+    count = var.private_deployment ? 1 : 0
+    private_endpoint_id = oci_resourcemanager_private_endpoint.rms_private_endpoint[0].id
+    private_ip = tostring(oci_core_instance.bastion.private_ip)
+}

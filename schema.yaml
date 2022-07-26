@@ -113,7 +113,8 @@ variableGroups:
       - ${use_existing_vcn}
       - ${vcn_compartment}
       - ${vcn_id}
-#      - ${public_subnet_id}
+      - ${private_deployment}
+      - ${public_subnet_id}
       - ${private_subnet_id}
       - ${vcn_subnet}
       - ${public_subnet}
@@ -539,7 +540,7 @@ variables:
     type: integer
     minimum: 0
     title: "Initial cluster size"
-    default: 0
+    default: 2
     description: "Number of Compute Instances (Permanent Cluster when autoscaling)"
 
   hyperthreading:
@@ -754,6 +755,11 @@ variables:
       and:
         - ${use_advanced}
         - ${use_scratch_nfs}
+  private_deployment:
+    type: boolean
+    title: "Deploy within a private subnet"
+    description: "Deploy all the infrastructure within one private subnet. This will require the creation of a bastion service, VPN or FastConnect to access the cluster"      
+    default: false
   use_existing_vcn:
     type: boolean
     title: "Use Existing VCN"
@@ -775,14 +781,14 @@ variables:
     required: true
     dependsOn:
       compartmentId: ${vcn_compartment}
-  # public_subnet_id:
-  #   type: oci:core:subnet:id
-  #   dependsOn:
-  #     compartmentId: ${vcn_compartment}
-  #     vcnId: ${vcn_id}
-  #     hidePrivateSubnet: true
-  #   visible: ${use_existing_vcn}
-  #   required: true
+  public_subnet_id:
+    type: oci:core:subnet:id
+    dependsOn:
+      compartmentId: ${vcn_compartment}
+      vcnId: ${vcn_id}
+      hidePrivateSubnet: true
+    visible: ${use_existing_vcn}
+    required: false
   private_subnet_id:
     type: oci:core:subnet:id
     dependsOn:

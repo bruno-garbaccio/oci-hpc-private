@@ -29,7 +29,7 @@ variable "scratch_nfs_path" { default = "/nfs/scratch" }
 variable "vcn_compartment" { default = ""}
 variable "vcn_id" { default = ""}
 variable "use_existing_vcn" { default = false}
-#variable "public_subnet_id" { default = ""}
+variable "public_subnet_id" { default = ""}
 variable "private_subnet_id" { default = ""}
 variable "vcn_subnet" { default = "172.16.0.0/21" }
 variable "public_subnet" { default = "172.16.0.0/24" }
@@ -173,3 +173,5 @@ variable scratch_nfs_mount { default = ""}
 variable scratch_nfs_export {default = ""}
 variable cluster_nfs_mount {default = ""}
 variable cluster_nfs_export {default = ""}
+
+variable "private_deployment" { default = false }
