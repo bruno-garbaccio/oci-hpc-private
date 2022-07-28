@@ -282,10 +282,11 @@ By default, the home folder is NFS shared directory between all nodes from the b
 
 # Deploy within a private subnet
 
-If "true", this will create a private endpoint in order for Oracle Resource Manager to configure the bastion VM and the future nodes in a private subnet only. 
-* If "Use Existing Subnet" is false, an empty public subnet will be created. 
-* If "Use Existing Subnet" is also true, "public_subnet_id" can remain empty. 
-The instances will reside in a private subnet. Therefore, the creation of a "bastion servic]" (https://docs.oracle.com/en-us/iaas/Content/Bastion/Concepts/bastionoverview.htm), a VPN or FastConnect connection is required. If a public subnet exists in the VCN, adapting the security lists and creating a jump host can also work. Finally, a Peering can also be established betwen the private subnet and another VCN reachable by the user.
+If "true", this will create a private endpoint in order for Oracle Resource Manager to configure the bastion VM and the future nodes in private subnet(s). 
+* If "Use Existing Subnet" is false, Terraform will create 2 private subnets, one for the bastion and one for the compute nodes.  
+* If "Use Existing Subnet" is also true, the user must indicate a private subnet for the bastion VM. For the compute nodes, they can reside in another private subnet or the same private subent as the bastion VM. 
+
+The bastion VM will reside in a private subnet. Therefore, the creation of a "bastion service" (https://docs.oracle.com/en-us/iaas/Content/Bastion/Concepts/bastionoverview.htm), a VPN or FastConnect connection is required. If a public subnet exists in the VCN, adapting the security lists and creating a jump host can also work. Finally, a Peering can also be established betwen the private subnet and another VCN reachable by the user.
 
 
 
